@@ -31,6 +31,9 @@
         state: present
       register: postgres_sg
 
+    - name: DEBUG
+      debug: var=postgres_sg
+
     - name: Create Postgres-Tag SG (finish)
       ec2_group:
         name: M5-postgres-tag-sg

@@ -1,0 +1,36 @@
+---
+- hosts: localhost
+  gather_facts: no
+  tasks:
+
+    - name: Create RDS Subnet Group
+      rds_subnet_group:
+        state: present
+        region: us-east-2
+        name: M5-private-dbgrp
+        description: "Private subnet group for rds instances"
+        subnets:
+          - "{{ privsub1.subnet.id }}"
+          - "{{ privsub2.subnet.id }}"
+      register: dbgrp
+    
+    - name: DEBUG
+      debug: var=dbgrp
+
+    - name: Create RDS Postgres DB
+      rds:
+        command: create
+        instance_name: m5-image-gallery
+        db_name: m5ig
+        region: us-east-2
+        license_model: postgresql-license
+        db_engine: postgres
+        size: '10'
+        instance_type: db.t2.micro
+        username: postgres
+        password: xang1bl1
+        subnet: "{{ dbgrp.subnet_group.name }}"
+        vpc_security_groups: "{{ postgres_sg.group_id }}" 
+        wait: yes
+      register: rds_db      
+

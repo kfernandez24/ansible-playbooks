@@ -16,6 +16,7 @@
           - sg-0ecfd8bd438b63caa
         instance_tags:
           Name: M5-ig-development
+          Module: 5
         vpc_subnet_id: "{{ pubsub1.subnet.id }}"
         assign_public_ip: yes
         exact_count: 1
