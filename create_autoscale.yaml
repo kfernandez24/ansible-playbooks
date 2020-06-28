@@ -20,6 +20,7 @@
               - sg-0044230475e23d983 #nginx-servers
               - sg-0ecfd8bd438b63caa #ig-development
         user_data: "{{ lookup('file', './startup-scripts/ec2_startup.sh') | b64encode }}"
+        state: present    
       register: launch_temp
 
     - name: Create Target Group for NLB
@@ -37,6 +38,7 @@
         stickiness_type: source_ip
         stickiness_enabled: no
         vpc_id: "{{ vpc.vpc.id }}"
+        target_type: instance
         state: present
       register: target_group
 
