@@ -1,0 +1,79 @@
+---
+- hosts: localhost
+  gather_facts: no
+  tasks:
+
+    - name: Create Postgres-Tag SG (Init)
+      ec2_group:
+        name: M5-postgres-tag-sg
+        description: instances tagged with sg can contact postgreSQL RDS
+        vpc_id: "{{ vpc.vpc.id }}"
+        region: 'us-east-2'
+        rules_egress:
+          - proto: tcp
+            ports: 
+              - 5432
+          #  group_id: "{{ postgres_sg.group_id }}"
+        state: present
+      register: tag_sg
+
+    - name: Create Postgres SG
+      ec2_group:
+        name: M5-postgres-sg
+        description: Allow connection to postgres from tagged instances
+        vpc_id: "{{ vpc.vpc.id }}"
+        region: 'us-east-2'
+        rules:
+          - proto: tcp
+            ports:
+              - 5432
+            group_id: "{{ tag_sg.group_id }}"          
+        state: present
+      register: postgres_sg
+
+    - name: Create Postgres-Tag SG (finish)
+      ec2_group:
+        name: M5-postgres-tag-sg
+        description: instances tagged with sg can contact postgreSQL RDS
+        vpc_id: "{{ vpc.vpc.id }}"
+        region: 'us-east-2'
+        rules_egress:
+          - proto: tcp
+            ports: 
+              - 5432
+            group_id: "{{ postgres_sg.group_id }}"
+        state: present
+      register: tag_sg
+
+    - name: Create NGINX SERVERS SG
+      ec2_group:
+        name: M5-ig-nginx-sg
+        description: nginx load balanced servers
+        vpc_id: "{{ vpc.vpc.id }}"
+        region: 'us-east-2'
+        rules:
+          - proto: tcp
+            ports: 
+              - 80
+              - 22
+            cidr_ip: 0.0.0.0/0
+        state: present
+      register: nginx_sg
+
+    - name: Create Development SG
+      ec2_group:
+        name: M5-ig-development
+        description: allow connection to port 5000 form home ip and ssh
+        vpc_id: "{{ vpc.vpc.id }}"
+        region: 'us-east-2'
+        rules:
+          - proto: tcp
+            ports:
+              - 22
+            cidr_ip: 0.0.0.0/0
+          - proto: tcp
+            ports: 
+              - 5000
+            cidr_ip: 68.93.21.221/32
+        state: present
+      register: dev_sg

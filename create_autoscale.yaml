@@ -1,0 +1,108 @@
+---
+- hosts: localhost
+  gather_facts: no
+  tasks:
+
+    - name: Create Launch Template for ASG
+      ec2_launch_template:
+        name: "m5-ig-lt"
+        image_id: "ami-026dea5602e368e96"
+        instance_type: t2.micro
+        key_name: CPSC4793-KeyPair
+        tags:
+          Name: M5-ig-asg-server
+        iam_instance_profile: image-gallery-server-role
+        network_interfaces:
+          - associate_public_ip_address: yes
+            device_index: 0
+            groups:
+              - sg-0cde9f1618580e51c #postgres-tag  
+              - sg-0044230475e23d983 #nginx-servers
+              - sg-0ecfd8bd438b63caa #ig-development
+        user_data: "{{ lookup('file', './startup-scripts/ec2_startup.sh') | b64encode }}"
+      register: launch_temp
+
+    - name: DEBUG
+      debug: var=launch_temp
+
+    - name: Create Target Group for NLB
+      elb_target_group:
+        name: M5-ig-tg
+        protocol: tcp
+        port: 80
+        health_check_port: 'traffic-port'
+        health_check_protocol: tcp
+        health_check_timeout: 10
+        healthy_threshold_count: 3
+        unhealthy_threshold_count: 3
+        health_check_interval: 30
+        deregistration_delay_timeout: 300
+        stickiness_type: source_ip
+        stickiness_enabled: no
+        vpc_id: "{{ vpc.vpc.id }}"
+        state: present
+      register: target_group
+
+    - name: Grab EIP 1
+      ec2_eip_info:
+       filters:
+          tag:Name: nginx-server-1
+      register: eip1
+
+    - name: Grab EIP 2
+      ec2_eip_info:
+        filters:
+          tag:Name: nginx-server-2
+      register: eip2
+
+    - name: Update DNS
+      route53:
+        state: present
+        overwrite: yes
+        zone: kfernandez.org
+        record: kfernandez.org
+        type: A
+        ttl: 60
+        value: 
+          - "{{ eip1.addresses[0].public_ip }}"
+          - "{{ eip2.addresses[0].public_ip }}"
+        wait: yes 
+
+    - name: Create Network Load Balancer
+      elb_network_lb:
+        name: M5-ig-nlb
+        subnet_mappings:
+          - SubnetId: "{{ pubsub1.subnet.id }}"
+            AllocationId: "{{ eip1.addresses[0].allocation_id }}"
+          - SubnetId: "{{ pubsub2.subnet.id }}"
+            AllocationId: "{{ eip2.addresses[0].allocation_id }}"
+        listeners:
+          - Protocol: TCP
+            Port: 80
+            DefaultActions:
+              - Type: forward
+                TargetGroupName: "{{ target_group.target_group_name }}"
+          - Protocol: TLS
+            Port: 443
+            Certificates:
+              - CertificateArn: arn:aws:acm:us-east-2:761609241121:certificate/dc628e8b-3afc-457b-bbf9-558a774af3df
+            DefaultActions:
+              - Type: forward
+                TargetGroupName: "{{ target_group.target_group_name }}"
+        validate_certs: yes
+        state: present
+      register: nlb
+
+    - name: DEBUG
+      debug: var=nlb
+
+    - name: Create Auto Scaling Group
+      ec2_asg:
+        name: M5-ig-asg
+        launch_template:
+          launch_template_id: "{{ launch_temp.default_template.launch_template_id }}"
+        min_size: 2
+        max_size: 4
+        desired_capacity: 2
+        vpc_zone_identifier: [ "{{ pubsub1.subnet.id }}", "{{ pubsub2.subnet.id }}" ]
+        state: present
