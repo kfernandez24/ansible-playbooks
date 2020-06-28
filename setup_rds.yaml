@@ -3,6 +3,15 @@
   become: true
   tasks:
 
-    - name: Set up DB
+    - name: Create Image Gallery User
+      postgresql_user:
+      db: m5ig
+      login_user: postgres
+      login_password: xangh1bl1
+      name: m5ig
+      password: xangh1bl1
+      priv: all
+
+    
       
    
