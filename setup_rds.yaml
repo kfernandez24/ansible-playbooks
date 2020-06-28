@@ -2,7 +2,7 @@
 - hosts: ec2-52-14-42-126.us-east-2.compute.amazonaws.com
   become: true
   tasks:
-
+  
     - name: Create Image Gallery User
       postgresql_user:
       db: m5ig
