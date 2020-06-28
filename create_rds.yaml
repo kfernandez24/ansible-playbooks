@@ -13,24 +13,44 @@
           - "{{ privsub1.subnet.id }}"
           - "{{ privsub2.subnet.id }}"
       register: dbgrp
-    
-    - name: DEBUG
-      debug: var=dbgrp
+
+#    - name: Create RDS Postgres DB
+#      rds:
+#        command: create
+#        instance_name: m5-image-gallery
+#        db_name: m5ig
+#        region: us-east-2
+#        license_model: postgresql-license
+#        db_engine: postgres
+#        size: '10'
+#        instance_type: db.t2.micro
+#        username: postgres
+#        password: xang1bl1
+#        subnet: "{{ dbgrp.subnet_group.name }}"
+#        vpc_security_groups: "{{ postgres_sg.group_id }}" 
+#        wait: yes
+#      register: rds_db      
 
     - name: Create RDS Postgres DB
-      rds:
-        command: create
+      local_action:
+        module: rds
+        command: restore
+        snapshot: image-gallery-snap
         instance_name: m5-image-gallery
-        db_name: m5ig
         region: us-east-2
-        license_model: postgresql-license
+        zone: us-east-2a
         db_engine: postgres
-        size: '10'
         instance_type: db.t2.micro
-        username: postgres
-        password: xang1bl1
         subnet: "{{ dbgrp.subnet_group.name }}"
-        vpc_security_groups: "{{ postgres_sg.group_id }}" 
-        wait: yes
       register: rds_db      
 
+    - name: Fix RDS security group
+      local_action:
+        module: rds
+        command: modify
+        instance_name: m5-image-gallery
+        region: us-east-2
+        vpc_security_groups: "{{ postgres_sg.group_id }}" 
+     
+    - debug:
+        msg: "The new db endpoint is {{ rds_db.instance.endpoint }}"

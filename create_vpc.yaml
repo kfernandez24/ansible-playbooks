@@ -114,10 +114,12 @@
           - "{{ pubsub2.subnet.id }}"
         ingress:
             # rule no, protocol, allow/deny, cidr, icmp_type, icmp_code, port from, port to
-            - [100, 'tcp', 'allow', '68.93.21.221/32', null, null, 443, 443]         
+           # - [100, 'tcp', 'allow', '68.93.21.221/32', null, null, 443, 443]         
+            - [100, 'tcp', 'allow', '0.0.0.0/0', null, null, 443, 443]         
             - [200, 'tcp', 'allow', '0.0.0.0/0', null, null, 22, 22]         
-            - [300, 'tcp', 'allow', '24.196.25.139/32', null, null, 443, 443]
-            - [400, 'tcp', 'allow', '24.239.105.213/32', null, null, 443, 443]
+            - [300, 'tcp', 'allow', '0.0.0.0/0', null, null, 80, 80]         
+           # - [400, 'tcp', 'allow', '24.196.25.139/32', null, null, 443, 443]
+           # - [500, 'tcp', 'allow', '24.239.105.213/32', null, null, 443, 443]
             - [900, 'tcp', 'allow', '0.0.0.0/0', null, null, 1024, 65535]
         egress:
             - [100, 'tcp', 'allow', '0.0.0.0/0', null, null, 80, 80]         

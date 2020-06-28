@@ -4,4 +4,4 @@
 - import_playbook: create_rds.yaml
 - import_playbook: create_autoscale.yaml
 - import_playbook: create_ec2.yaml
-- import_playbook: setup_rds.yaml
+# - import_playbook: setup_rds.yaml
