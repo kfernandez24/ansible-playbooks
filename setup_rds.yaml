@@ -1,0 +1,8 @@
+---
+- hosts: ec2-52-14-42-126.us-east-2.compute.amazonaws.com
+  become: true
+  tasks:
+
+    - name: Set up DB
+      
+   
