@@ -1,0 +1,23 @@
+---
+- hosts: localhost
+  gather_facts: no
+  tasks:
+
+    - name: Create Development EC2 Instance
+      ec2:
+        key_name: CPSC4793-KeyPair
+        region: us-east-2
+        instance_type: t2.micro
+        image: ami-048e1de2ae989f75d  
+        wait: yes
+        group_id:
+          - sg-0cde9f1618580e51c
+          - sg-0044230475e23d983
+          - sg-0ecfd8bd438b63caa
+        instance_tags:
+          Name: M5-ig-development
+        vpc_subnet_id: "{{ pubsub1.subnet.id }}"
+        assign_public_ip: yes
+        exact_count: 1
+        count_tag:
+          Name: M5-ig-development        

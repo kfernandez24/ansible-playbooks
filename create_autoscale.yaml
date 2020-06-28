@@ -22,9 +22,6 @@
         user_data: "{{ lookup('file', './startup-scripts/ec2_startup.sh') | b64encode }}"
       register: launch_temp
 
-    - name: DEBUG
-      debug: var=launch_temp
-
     - name: Create Target Group for NLB
       elb_target_group:
         name: M5-ig-tg
@@ -55,18 +52,6 @@
           tag:Name: nginx-server-2
       register: eip2
 
-    - name: Update DNS
-      route53:
-        state: present
-        overwrite: yes
-        zone: kfernandez.org
-        record: kfernandez.org
-        type: A
-        ttl: 60
-        value: 
-          - "{{ eip1.addresses[0].public_ip }}"
-          - "{{ eip2.addresses[0].public_ip }}"
-        wait: yes 
 
     - name: Create Network Load Balancer
       elb_network_lb:
@@ -93,8 +78,30 @@
         state: present
       register: nlb
 
-    - name: DEBUG
-      debug: var=nlb
+    - name: Update DNS
+      route53:
+        state: present
+        overwrite: yes
+        zone: kfernandez.org
+        record: kfernandez.org
+        type: A
+        alias: yes
+        alias_hosted_zone_id: ZLMOA37VPKANP
+        value: "{{ nlb.dns_name }}"
+        wait: yes 
+
+#    - name: Update DNS
+#      route53:
+#        state: present
+#        overwrite: yes
+#        zone: kfernandez.org
+#        record: kfernandez.org
+#        type: A
+#        ttl: 60
+#        value: 
+#          - "{{ eip1.addresses[0].public_ip }}"
+#          - "{{ eip2.addresses[0].public_ip }}"
+#        wait: yes 
 
     - name: Create Auto Scaling Group
       ec2_asg:
